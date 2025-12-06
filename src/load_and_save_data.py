@@ -24,7 +24,8 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     g = 9.8  # gravity (m/s^2)
     
     def calculate_throw_features(group):
-        qb_data = group[group['player_role'] == 'Passer']
+        # Handle both string and categorical player_role
+        qb_data = group[group['player_role'].astype(str) == 'Passer']
         if len(qb_data) == 0:
             return None
         
@@ -89,12 +90,12 @@ def load_data(dir_path: Path) -> pd.DataFrame:
     # Load and process supplementary data
     supplementary_df = pd.read_csv(dir_path / 'supplementary_data.csv', low_memory=False)
     
-    # Convert categorical columns to codes
+    # Keep categorical columns as categories (preserve original values)
     cat_cols = ['home_team_abbr', 'possession_team', 'defensive_team', 'yardline_side', 
                 'visitor_team_abbr', 'offense_formation', 'route_of_targeted_receiver', 
                 'dropback_type', 'pass_location_type', 'team_coverage_man_zone', 'team_coverage_type']
     for col in cat_cols:
-        supplementary_df[col] = supplementary_df[col].astype('category').cat.codes
+        supplementary_df[col] = supplementary_df[col].astype('category')
     
     # Process specific columns
     supplementary_df[['receivers_left', 'receivers_right']] = supplementary_df['receiver_alignment'].apply(
@@ -119,8 +120,11 @@ def load_data(dir_path: Path) -> pd.DataFrame:
         
         # Process input data (keep all players for physics calculations)
         df_input['player_height_cm'] = df_input['player_height'].apply(height_to_cm)
-        df_input['player_position'] = df_input['player_position'].astype('category').cat.codes
-        df_input['player_side'] = df_input['player_side'].astype('category').cat.codes
+        # Keep categorical columns as categories (preserve original values)
+        df_input['player_position'] = df_input['player_position'].astype('category')
+        df_input['player_side'] = df_input['player_side'].astype('category')
+        # Keep player_role as category for feature engineering
+        df_input['player_role'] = df_input['player_role'].astype('category')
         df_input.drop(columns=['player_height', 'player_weight', 'player_birth_date', 
                               'player_name', 'num_frames_output', 'play_direction'], inplace=True)
         
@@ -129,9 +133,8 @@ def load_data(dir_path: Path) -> pd.DataFrame:
         df_merged = pd.merge(df_input, df_output, on=['game_id', 'play_id', 'nfl_id', 'frame_id'], how='left')
         df_final = pd.merge(df_merged, supplementary_df, on=['game_id', 'play_id'], how='left')
 
-        # Add physics features and encode player_role
+        # Add physics features (keep player_role as category for now)
         df_final = add_features(df_final)
-        df_final['player_role'] = df_final['player_role'].astype('category').cat.codes
         
         # Filter to prediction targets only
         df_final = df_final[df_final['player_to_predict'] == True]
