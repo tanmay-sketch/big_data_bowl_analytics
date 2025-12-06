@@ -1,135 +1,166 @@
-# CSE 482 Final Project: NFL Route Analysis with Physics-Based Modeling
+# Physics-Informed NFL Route Analysis
 
-**Student:** Tanmay  
-**Course:** CSE 482 - Big Data Analytics  
-**Date:** December 2025
+**CSE 482 Final Project**  
+**Name:** Tanmay Grandhisiri 
+**Link to Github Repository:** https://github.com/tanmay-sketch/big_data_bowl_analytics.git
+**December 2025**
 
 ## Abstract
 
-This project analyzes NFL route patterns using physics-based modeling to predict route success. We developed individual visualizations for each route type and built a logistic regression model using ball trajectory physics features. The analysis covers 1.3M+ tracking records from NFL games, achieving 58.8% prediction accuracy with significant improvement over baseline performance.
+This report applies physics-based modeling to NFL route analysis using 1.3M+ tracking records. A logistic regression model incorporating ball trajectory physics achieves 58.8% prediction accuracy, representing a 6.2% improvement over baseline. Individual route visualizations reveal performance patterns, with HITCH and SLANT routes demonstrating better success rates of 59.7% and 59.6% respectively.
 
-## Problem Statement
+## Introduction
 
-NFL teams need data-driven insights for route selection and game planning. Traditional route analysis lacks physics-based modeling of ball trajectory characteristics. This project addresses the gap by combining route pattern analysis with physics features to predict route success and generate actionable insights for team strategy.
+NFL route effectiveness analysis traditionally relies on statistical aggregation techniques without considering underlying physics. This approach misses critical trajectory characteristics that influence completion probability. The work within this project integrates kinematic equations with route pattern analysis to develop a predictive framework for route success.
 
-## Dataset
-
-- **Source**: NFL Big Data Bowl tracking data
-- **Size**: 1,303,440 play records
-- **Features**: Player positions, ball trajectory, physics measurements
-- **Target Variable**: Route success (positive Expected Points Added)
-- **Route Types**: 12 distinct NFL route patterns
+There were challenges in extracting features from noisy tracking data while maintaining model. There were also many unnecessary features that had to be removed while combining the pre-snap, post-snap and supplementary data which proved to be a difficult task. The final model balances interpretability with predictive power, providing actionable insights for coaching staff.
 
 ## Methodology
 
-### Data Processing
-1. Combined multiple weekly tracking datasets
-2. Calculated physics features: launch velocity, launch angle, horizontal velocity
-3. Defined success metric using Expected Points Added (EPA > 0)
-4. Filtered routes with sufficient sample sizes (n ≥ 100)
+### Dataset Description
 
-### Physics-Based Modeling
-- **Algorithm**: Logistic Regression
-- **Features**: Launch velocity, launch angle, horizontal velocity, pass length
-- **Training**: 80/20 train-test split with stratification
-- **Evaluation**: Accuracy, improvement over baseline
+The analysis uses a combined dataset (`combined_data.csv`) generated form `load_and_save_data.py`containing 1,303,440 records with 52 features. This represents processed NFL tracking data merged with play-level information and computed physics features.
 
-### Visualization Framework
-- Individual high-resolution images per route type
-- Professional NFL field styling with accurate dimensions
-- Comprehensive performance metrics panels
-- Route-specific pattern visualization
+**Key Identifiers:** `game_id`, `play_id`, `nfl_id`, `frame_id`
+
+**Core Data Categories:**
+- **Player Information:** Position, role (Targeted Receiver, Defensive Coverage), height, team affiliation
+- **Spatial Tracking:** Field coordinates (x, y), speed (s), acceleration (a), direction (dir), orientation (o)
+- **Play Context:** Quarter, down, yards to go, field position, team scores, formation types
+- **Route Analysis:** Target receiver route type, pass length, dropback information, coverage schemes
+- **Ball Trajectory:** Landing coordinates, computed launch velocity, launch angle, horizontal velocity
+- **Outcome Metrics:** Expected Points Added (EPA), win probability changes, success indicators
+
+**Route Types Present:** HITCH (236K plays), OUT (181K), CROSS (159K), GO (157K), IN (143K), and others
+
+The dataset combines pre-snap formation data, player tracking coordinates, and post-play outcomes to enable physics-based route analysis.
+
+
+### Data Preprocessing
+
+The dataset contains tracking coordinates $(x_i, y_i)$ at 10 frames per second sampling rate for all players across 1,303,440 play records. I extracted physics features through kinematic analysis:
+
+**Launch Velocity Magnitude:**
+$$v_{launch} = \sqrt{v_x^2 + v_y^2 + v_z^2}$$
+
+**Launch Angle:**
+$$\theta_{launch} = \arctan\left(\frac{v_z}{\sqrt{v_x^2 + v_y^2}}\right)$$
+
+**Horizontal Velocity Component:**
+$$v_{xy} = \sqrt{v_x^2 + v_y^2}$$
+
+### Physics-Based Classification
+
+Route success prediction can be formulated as a binary classification problem where success is defined as positive Expected Points Added (EPA > 0). The logistic regression model:
+
+$$P(success = 1|X) = \frac{1}{1 + e^{-(\beta_0 + \beta_1v_{launch} + \beta_2\theta_{launch} + \beta_3v_{xy} + \beta_4L)}}$$
+
+where $L$ represents pass length in yards.
+
+**Feature Selection Rationale:**
+- **Launch velocity** captures quarterback arm strength and timing
+- **Launch angle** affects trajectory optimization for route depth  
+- **Horizontal velocity** indicates quick-release patterns
+- **Pass length** accounts for route distance complexity
+
+### Challenges Faced
+
+As I had briefly mentioned earlier the dataset required preprocessing to handle missing values and compute physics features from raw coordinate data. Figuring out the kinematic equations was challenging given a long gap in physics. Feature extraction involved calculating velocities and trajectories from position measurements, which required careful handling of the temporal sequence data.
 
 ## Results
 
-### Model Performance
-- **Accuracy**: 58.8%
-- **Baseline**: 52.6%
-- **Improvement**: +6.2 percentage points
-- **Classification**: Good performance for sports prediction
+### Model Performance Metrics
 
-### Route Performance Analysis
+The physics-based logistic regression achieved:
+- **Accuracy:** 58.8% (vs 52.6% baseline)
+- **Precision:** 61.2% for successful routes  
+- **Recall:** 54.1% for successful routes
+- **F1-Score:** 57.4%
 
-| Route | Success Rate | Avg EPA | Sample Size |
-|-------|--------------|---------|-------------|
-| HITCH | 59.7% | +0.24 | 155,432 |
-| SLANT | 59.6% | +0.32 | 164,789 |
-| OUT | 55.7% | +0.22 | 189,234 |
-| CROSS | 54.8% | +0.19 | 145,678 |
-| GO | 51.2% | +0.15 | 123,456 |
+### Route-Specific Analysis
 
-### Key Findings
-1. **HITCH and SLANT routes** show highest success rates (≈60%)
-2. **Launch velocity** is the primary predictor of route success
-3. **Physics features** provide meaningful predictive power beyond basic statistics
-4. **Route-specific patterns** emerge in optimal trajectory parameters
+The visualizations above reveal distinct physics patterns across route types. Individual route analysis shows:
 
-## Visualizations
+**Key Insights from Visual Analysis:**
+- Short routes (HITCH, SLANT) demonstrate tighter clustering in trajectory patterns
+- Deep routes (GO, POST) show greater variability in launch parameters
+- Intermediate routes (OUT, CROSS, IN) balance distance with completion consistency
+- Route success correlates with physics parameter optimization as shown in individual visualizations
 
-### Individual Route Analysis
-Generated 8 separate visualizations showing:
-- Route pattern on professional NFL field
-- Physics metrics (velocity, angle, flight time)
-- Performance statistics (success rate, EPA)
-- Color-coded success indicators
+*Note: Detailed statistics are embedded within each route visualization above, showing success rates, physics parameters, and trajectory patterns.*
 
-### Sample Route Visualizations
+### Feature Importance Analysis
 
-The analysis generated 8 individual route visualizations and 1 summary chart:
+**Verified** logistic regression coefficients:
+- **Launch velocity:** β₁ = -1.040 (negative correlation - surprising finding)
+- **Horizontal velocity:** β₃ = 0.994 (strongest positive predictor) 
+- **Pass length:** β₄ = 0.040 (slight positive correlation)
+- **Launch angle:** β₂ = 0.063 (moderate positive impact)
+- **Intercept:** β₀ = 0.557
 
-- `route_hitch_analysis.png` - HITCH route pattern and metrics
-- `route_slant_analysis.png` - SLANT route pattern and metrics  
-- `route_out_analysis.png` - OUT route pattern and metrics
-- `route_cross_analysis.png` - CROSS route pattern and metrics
-- `route_go_analysis.png` - GO route pattern and metrics
-- `route_in_analysis.png` - IN route pattern and metrics
-- `route_post_analysis.png` - POST route pattern and metrics
-- `route_flat_analysis.png` - FLAT route pattern and metrics
-- `route_summary_comparison.png` - Comparative analysis of all routes
+**Key Insight:** The negative launch velocity coefficient suggests that extremely high launch velocities may reduce completion probability, possibly due to timing difficulties or overthrown passes.
 
-## Technical Implementation
+## Visualization Results
 
-### Code Structure
-```
-src/
-├── individual_route_analysis.py   # Main analysis script
-└── load_and_save_data.py         # Data preprocessing
+**HITCH Route Pattern:**
+![HITCH Route Analysis](results/route_hitch_analysis.png)
 
-results/                           # Generated visualizations
-├── route_hitch_analysis.png      # Individual route images (8 files)
-├── route_slant_analysis.png
-├── ...
-└── route_summary_comparison.png   # Summary comparison
-```
+**SLANT Route Pattern:**
+![SLANT Route Analysis](results/route_slant_analysis.png)
 
-### Key Libraries
-- **pandas/numpy**: Data processing and analysis
-- **scikit-learn**: Machine learning modeling
-- **matplotlib**: Visualization and NFL field rendering
-- **pathlib**: File system operations
+**OUT Route Pattern:**  
+![OUT Route Analysis](results/route_out_analysis.png)
+
+**CROSS Route Pattern:**
+![CROSS Route Analysis](results/route_cross_analysis.png)
+
+**GO Route Pattern:**
+![GO Route Analysis](results/route_go_analysis.png)
+
+**IN Route Pattern:**
+![IN Route Analysis](results/route_in_analysis.png)
+
+**POST Route Pattern:**
+![POST Route Analysis](results/route_post_analysis.png)
+
+**FLAT Route Pattern:**
+![FLAT Route Analysis](results/route_flat_analysis.png)
+
+### Comparative Summary
+
+**Route Success Comparison:**
+![Route Summary Comparison](results/route_summary_comparison.png)
+
+These visualizations enable coaches to quickly identify optimal trajectory parameters for each route type.
+
+## Project Challenges
+
+The primary difficulty in this project was **feature computation and data integration**. Working with the large combined dataset (1.3M+ records) presented several practical challenges:
+
+**Data Processing Complexity:** Computing physics features from raw tracking coordinates required careful handling of velocity calculations and trajectory analysis. The ball tracking data needed preprocessing to extract meaningful launch velocities and angles from noisy position measurements.
+
+**Large Dataset Management:** The CSV file size made loading and processing computationally intensive. Memory management became critical when computing features across all plays simultaneously.
+
+**Feature Engineering:** Combining ball trajectory physics with route outcome data required aligning different data structures and ensuring temporal consistency between ball release and route completion events.
 
 ## Discussion
 
-The physics-based approach successfully identifies route performance patterns that traditional statistics might miss. The 6.2% improvement over baseline demonstrates the value of incorporating ball trajectory physics into route analysis.
+The analysis provides insights into route effectiveness patterns that could inform coaching decisions and player development strategies.
 
-**Limitations:**
-- Model limited to available physics features
-- Success metric (EPA) may not capture all route effectiveness aspects
-- Sample sizes vary significantly across route types
+**Limitations:** The model assumes ideal trajectory conditions and does not account for defensive pressure or environmental factors. The EPA success metric, while useful, may not capture all strategic aspects of route effectiveness.
 
-**Future Work:**
-- Incorporate defensive alignment data
-- Explore ensemble methods for improved accuracy
-- Analyze situational factors (down, distance, game state)
+The current approach provides a foundation for physics-based route analysis, though several limitations exist. The model assumes ideal conditions without accounting for defensive pressure or environmental factors. Future work could explore more sophisticated feature engineering and alternative machine learning approaches.
 
 ## Conclusion
 
-This project demonstrates effective application of big data analytics to NFL route analysis. The combination of physics-based modeling with professional visualization provides actionable insights for team strategy and player development. The methodology successfully bridges sports analytics with data science techniques, achieving meaningful predictive performance while maintaining interpretability.
+This study demonstrates successful integration of physics-based features into NFL route analysis, achieving meaningful predictive improvement over traditional statistical methods. The 6.2% accuracy gain translates to actionable insights for route selection and quarterback development.
 
-The generated visualizations and models provide a foundation for data-driven route selection and strategic planning in professional football.
+The methodology bridges theoretical physics with practical sports analytics, providing a framework applicable to other trajectory-based sports. The visualization system enables rapid interpretation of complex physics relationships for coaching staff.
 
----
+This project contributes novel physics feature extraction from NFL tracking data, creating an interpretable predictive model for route success with professional visualization capabilities. The work quantifies optimal trajectory parameters for different route types and provides a data-driven foundation for NFL strategic decision-making while advancing sports analytics methodology through physics integration.
 
-**Total Visualizations Generated**: 9 high-resolution images  
-**Model Accuracy**: 58.8% (vs 52.6% baseline)  
-**Dataset Scale**: 1.3M+ tracking records analyzed
+## Citations
+
+1. Colorlib. Rishav Dutta, dutta.github.io/nfl3d.html.
+2. “NFL Big Data Bowl 2026 - Analytics.” Kaggle, www.kaggle.com/competitions/nfl-big-data-bowl-2026-analytics/overview.
+3. Zhou, Lou, and Zachary Pipping. “PASSPREDICTR: Contextualizing NFL Throwing Decisions by Modeling Receiver Choice.” PassPredictR: Contextualizing NFL Throwing Decisions By Modeling Receiver Choice – Lou Zhou, lou-zhou.github.io/assets/QBReadR/PassPredictR_Report.html. 
